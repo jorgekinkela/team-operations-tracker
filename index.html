@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Operations & Attendance Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-slate-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg font-bold text-xl">TO</div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">Team Operations Portal</h1>
+                    <p class="text-xs text-slate-400">Daily Attendance & Event Management</p>
+                </div>
+            </div>
+            <div class="mt-4 sm:mt-0 flex items-center space-x-3">
+                <span id="current-date-display" class="text-sm bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300"></span>
+                <button onclick="openGuideModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow transition">
+                    Build Production App 🚀
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+        <!-- Metrics Overview Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Roster</p>
+                <p id="stat-total" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-medium text-emerald-600 uppercase tracking-wider">Present Today</p>
+                <p id="stat-present" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-medium text-rose-600 uppercase tracking-wider">Absent Today</p>
+                <p id="stat-absent" class="text-2xl font-bold text-rose-600 mt-1">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-medium text-amber-600 uppercase tracking-wider">Late / On Leave</p>
+                <p id="stat-other" class="text-2xl font-bold text-amber-600 mt-1">0</p>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="flex border-b border-slate-300 space-x-6">
+            <button onclick="switchTab('attendance')" id="tab-attendance" class="pb-3 font-semibold text-blue-600 border-b-2 border-blue-600 focus:outline-none">
+                📅 Daily Attendance Tracker
+            </button>
+            <button onclick="switchTab('events')" id="tab-events" class="pb-3 font-semibold text-slate-500 hover:text-slate-800 focus:outline-none">
+                🎉 Team Events & Schedule
+            </button>
+            <button onclick="switchTab('roster')" id="tab-roster" class="pb-3 font-semibold text-slate-500 hover:text-slate-800 focus:outline-none">
+                👥 Team Roster Management
+            </button>
+        </div>
+
+        <!-- TAB 1: ATTENDANCE TRACKER -->
+        <div id="section-attendance" class="space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center space-x-3 w-full md:w-auto">
+                    <label for="attendance-date" class="text-sm font-medium text-slate-700">Select Date:</label>
+                    <input type="date" id="attendance-date" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div class="flex flex-wrap gap-2 w-full md:w-auto justify-end">
+                    <button onclick="markAll('Present')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-2 rounded-lg border border-emerald-200 transition">Mark All Present</button>
+                    <button onclick="markAll('Absent')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold px-3 py-2 rounded-lg border border-rose-200 transition">Mark All Absent</button>
+                    <button onclick="resetAttendance()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-lg border border-slate-200 transition">Reset View</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3 px-4">#</th>
+                                <th class="py-3 px-4">Employee Name</th>
+                                <th class="py-3 px-4">Employee ID</th>
+                                <th class="py-3 px-4">Role / Title</th>
+                                <th class="py-3 px-4 text-center">Days Absent (Last 24 Days)</th>
+                                <th class="py-3 px-4 text-center">Today's Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: EVENTS & SCHEDULE -->
+        <div id="section-events" class="hidden space-y-4">
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="font-bold text-slate-900">Upcoming Team Events & Briefings</h2>
+                <button onclick="openEventModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow transition">
+                    + Add New Event
+                </button>
+            </div>
+
+            <div id="events-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Event cards populated dynamically -->
+            </div>
+        </div>
+
+        <!-- TAB 3: ROSTER -->
+        <div id="section-roster" class="hidden space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="font-bold text-slate-900">Team Directory & Management</h2>
+                    <p class="text-xs text-slate-500">Add or remove employees to update the roster across all tabs.</p>
+                </div>
+                <button onclick="openMemberModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow transition w-full sm:w-auto">
+                    + Add New Employee
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3 px-4">#</th>
+                                <th class="py-3 px-4">Full Name</th>
+                                <th class="py-3 px-4">Employee ID</th>
+                                <th class="py-3 px-4">Shift / Role</th>
+                                <th class="py-3 px-4 text-center">Days Absent (Last 24 Days)</th>
+                                <th class="py-3 px-4 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roster-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL: ADD MEMBER -->
+    <div id="member-modal" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <h3 class="text-lg font-bold text-slate-900">Add New Team Member</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Full Name</label>
+                    <input type="text" id="member-name" placeholder="e.g. John Doe" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Employee ID</label>
+                    <input type="text" id="member-empid" placeholder="e.g. 202659999" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Role / Shift</label>
+                    <input type="text" id="member-role" placeholder="e.g. Logistics Associate" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeMemberModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition">Cancel</button>
+                <button onclick="saveNewMember()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-lg transition">Add Member</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD EVENT -->
+    <div id="event-modal" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <h3 class="text-lg font-bold text-slate-900">Schedule Team Event</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Event Title</label>
+                    <input type="text" id="event-title" placeholder="e.g. Safety Briefing & All-Hands" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Date</label>
+                        <input type="date" id="event-date" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Time</label>
+                        <input type="text" id="event-time" placeholder="e.g. 08:00 AM" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Description / Location</label>
+                    <textarea id="event-desc" rows="3" placeholder="Details about the event..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeEventModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition">Cancel</button>
+                <button onclick="saveNewEvent()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition">Save Event</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: PRODUCTION GUIDE -->
+    <div id="guide-modal" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-900">How to Build This into a Live Production App</h3>
+                <button onclick="closeGuideModal()" class="text-slate-400 hover:text-slate-600 font-bold">&times;</button>
+            </div>
+            <div class="space-y-3 text-sm text-slate-600">
+                <p>To turn this working prototype into a permanent live cloud app accessible on your team's smartphones and computers, choose one of these two recommended paths:</p>
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <strong class="text-slate-900 block mb-1">Option A: Microsoft Power Apps + SharePoint (Enterprise/Warehouse)</strong>
+                    <p class="text-xs">Upload this roster list into a SharePoint list or Excel file. Open Power Apps studio and connect it as a data source. It generates an enterprise-ready mobile & desktop app instantly.</p>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <strong class="text-slate-900 block mb-1">Option B: Google Sheets + AppSheet (Fastest No-Code)</strong>
+                    <p class="text-xs">Put your team members into a Google Sheet with columns for Name, ID, and Role. Go to AppSheet.com, connect the sheet, and it automatically builds a native app for iOS and Android.</p>
+                </div>
+            </div>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeGuideModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg transition">Got it, thanks!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Initial Dynamic Team Members Roster
+        let teamMembers = [
+            { id: 1, name: "Gurpreet Kaur", empId: "202659579", role: "NIR / Associate" },
+            { id: 2, name: "Upkar Singh", empId: "202659580", role: "Area Associate" },
+            { id: 3, name: "Palash Roy", empId: "202659581", role: "Operations Supervisor" },
+            { id: 4, name: "Marcus Vance", empId: "202659582", role: "Warehouse Specialist" },
+            { id: 5, name: "Sarah Jenkins", empId: "202659583", role: "Logistics Clerk" },
+            { id: 6, name: "David Chen", empId: "202659584", role: "Forklift Operator" },
+            { id: 7, name: "Aisha Mohammed", empId: "202659585", role: "Inventory Control" },
+            { id: 8, name: "Liam O'Connor", empId: "202659586", role: "Shipping Coordinator" },
+            { id: 9, name: "Elena Rostova", empId: "202659587", role: "Receiving Associate" },
+            { id: 10, name: "Carlos Mendez", empId: "202659588", role: "Safety Compliance Lead" },
+            ...Array.from({ length: 40 }, (_, i) => ({
+                id: i + 11,
+                name: `Team Member ${i + 11}`,
+                empId: `20265${900 + i}`,
+                role: i % 3 === 0 ? "Logistics Associate" : (i % 2 === 0 ? "Warehouse Handler" : "Inventory Specialist")
+            }))
+        ];
+
+        // Sample Events List
+        let eventsList = [
+            { title: "Morning Safety Briefing", date: "2026-10-27", time: "07:30 AM", desc: "Review of pallet stacking protocols and site safety." },
+            { title: "Monthly All-Hands Meeting", date: "2026-10-30", time: "02:00 PM", desc: "Facility updates, safety awards, and Q&A session." },
+            { title: "Team BBQ & Social", date: "2026-11-05", time: "12:00 PM", desc: "Appreciation lunch for warehouse operations team." }
+        ];
+
+        let attendanceData = {};
+
+        // Initialize App on Load
+        window.onload = function() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('attendance-date').value = todayStr;
+            document.getElementById('current-date-display').innerText = new Date().toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+            // Generate mock past 24 days for realistic initial absent stats
+            generateMockPastData(todayStr);
+
+            document.getElementById('attendance-date').addEventListener('change', () => {
+                renderAttendanceTable();
+                renderRosterTable();
+            });
+
+            renderAttendanceTable();
+            renderRosterTable();
+            renderEventsGrid();
+        };
+
+        // Populate mock attendance for the last 24 days so absent counts look populated initially
+        function generateMockPastData(currentDateStr) {
+            const currDate = new Date(currentDateStr);
+            for (let i = 1; i <= 24; i++) {
+                let pastDate = new Date(currDate);
+                pastDate.setDate(currDate.getDate() - i);
+                let dateStr = pastDate.toISOString().split('T')[0];
+                
+                attendanceData[dateStr] = {};
+                teamMembers.forEach(m => {
+                    // Randomly assign some absences in past days (roughly 1 to 3 absences per person)
+                    let rand = Math.random();
+                    let status = 'Present';
+                    if (rand < 0.08) status = 'Absent';
+                    else if (rand < 0.12) status = 'Late';
+                    attendanceData[dateStr][m.id] = status;
+                });
+            }
+        }
+
+        // Calculate total absences for an employee across the last 24 recorded dates
+        function calculateAbsentCount(memberId) {
+            let absentCount = 0;
+            const dates = Object.keys(attendanceData);
+            
+            // Sort dates and take up to the last 24 days
+            const recentDates = dates.sort().slice(-24);
+
+            recentDates.forEach(date => {
+                if (attendanceData[date] && attendanceData[date][memberId] === 'Absent') {
+                    absentCount++;
+                }
+            });
+            return absentCount;
+        }
+
+        // Tab Switching
+        function switchTab(tab) {
+            ['attendance', 'events', 'roster'].forEach(t => {
+                document.getElementById(`section-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "pb-3 font-semibold text-slate-500 hover:text-slate-800 focus:outline-none border-b-2 border-transparent";
+            });
+            document.getElementById(`section-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = "pb-3 font-semibold text-blue-600 border-b-2 border-blue-600 focus:outline-none";
+        }
+
+        // Render Attendance Table
+        function renderAttendanceTable() {
+            const date = document.getElementById('attendance-date').value;
+            if (!attendanceData[date]) {
+                attendanceData[date] = {};
+                teamMembers.forEach(m => attendanceData[date][m.id] = 'Present');
+            }
+
+            const tbody = document.getElementById('attendance-table-body');
+            tbody.innerHTML = '';
+
+            teamMembers.forEach((m, index) => {
+                const status = attendanceData[date][m.id] || 'Present';
+                const totalAbsences = calculateAbsentCount(m.id);
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50 transition";
+                row.innerHTML = `
+                    <td class="py-3 px-4 text-slate-400 text-xs">${index + 1}</td>
+                    <td class="py-3 px-4 font-medium text-slate-900">${m.name}</td>
+                    <td class="py-3 px-4 font-mono text-xs text-slate-500">${m.empId}</td>
+                    <td class="py-3 px-4 text-slate-600">${m.role}</td>
+                    <td class="py-3 px-4 text-center font-bold text-rose-600">${totalAbsences} days</td>
+                    <td class="py-3 px-4 text-center">
+                        <select onchange="updateStatus(${m.id}, this.value)" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border cursor-pointer focus:outline-none ${getStatusClass(status)}">
+                            <option value="Present" ${status === 'Present' ? 'selected' : ''}>🟢 Present</option>
+                            <option value="Absent" ${status === 'Absent' ? 'selected' : ''}>🔴 Absent</option>
+                            <option value="Late" ${status === 'Late' ? 'selected' : ''}>🟡 Late</option>
+                            <option value="On Leave" ${status === 'On Leave' ? 'selected' : ''}>🔵 On Leave</option>
+                        </select>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            updateStats();
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'Present': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                case 'Absent': return 'bg-rose-50 text-rose-700 border-rose-200';
+                case 'Late': return 'bg-amber-50 text-amber-700 border-amber-200';
+                case 'On Leave': return 'bg-blue-50 text-blue-700 border-blue-200';
+                default: return 'bg-slate-50 text-slate-700 border-slate-200';
+            }
+        }
+
+        function updateStatus(memberId, status) {
+            const date = document.getElementById('attendance-date').value;
+            attendanceData[date][memberId] = status;
+            updateStats();
+            // Re-render roster as well to update absence counts live
+            renderRosterTable();
+        }
+
+        function markAll(status) {
+            const date = document.getElementById('attendance-date').value;
+            teamMembers.forEach(m => attendanceData[date][m.id] = status);
+            renderAttendanceTable();
+            renderRosterTable();
+        }
+
+        function resetAttendance() {
+            const date = document.getElementById('attendance-date').value;
+            teamMembers.forEach(m => attendanceData[date][m.id] = 'Present');
+            renderAttendanceTable();
+            renderRosterTable();
+        }
+
+        function updateStats() {
+            const date = document.getElementById('attendance-date').value;
+            const records = attendanceData[date] || {};
+            let present = 0, absent = 0, other = 0;
+
+            teamMembers.forEach(m => {
+                const s = records[m.id] || 'Present';
+                if (s === 'Present') present++;
+                else if (s === 'Absent') absent++;
+                else other++;
+            });
+
+            document.getElementById('stat-total').innerText = teamMembers.length;
+            document.getElementById('stat-present').innerText = present;
+            document.getElementById('stat-absent').innerText = absent;
+            document.getElementById('stat-other').innerText = other;
+        }
+
+        // Render Roster Table with Absence count & Remove Option
+        function renderRosterTable() {
+            const tbody = document.getElementById('roster-table-body');
+            tbody.innerHTML = '';
+            teamMembers.forEach((m, index) => {
+                const totalAbsences = calculateAbsentCount(m.id);
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50 transition";
+                row.innerHTML = `
+                    <td class="py-3 px-4 text-slate-400 text-xs">${index + 1}</td>
+                    <td class="py-3 px-4 font-medium text-slate-900">${m.name}</td>
+                    <td class="py-3 px-4 font-mono text-xs text-slate-600">${m.empId}</td>
+                    <td class="py-3 px-4 text-slate-600">${m.role}</td>
+                    <td class="py-3 px-4 text-center font-bold text-rose-600">${totalAbsences} days</td>
+                    <td class="py-3 px-4 text-center">
+                        <button onclick="removeMember(${m.id})" class="text-xs font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded border border-rose-200 transition">
+                            Remove
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            document.getElementById('stat-total').innerText = teamMembers.length;
+        }
+
+        // Dynamic Member Management Functions
+        function openMemberModal() { document.getElementById('member-modal').classList.remove('hidden'); }
+        function closeMemberModal() { document.getElementById('member-modal').classList.add('hidden'); }
+
+        function saveNewMember() {
+            const name = document.getElementById('member-name').value.trim();
+            const empId = document.getElementById('member-empid').value.trim();
+            const role = document.getElementById('member-role').value.trim();
+
+            if (!name) {
+                alert('Please enter an employee name.');
+                return;
+            }
+
+            const newMember = {
+                id: Date.now(),
+                name: name,
+                empId: empId || `2026${Math.floor(10000 + Math.random() * 90000)}`,
+                role: role || "Team Associate"
+            };
+
+            teamMembers.push(newMember);
+
+            Object.keys(attendanceData).forEach(date => {
+                attendanceData[date][newMember.id] = 'Present';
+            });
+
+            renderRosterTable();
+            renderAttendanceTable();
+            closeMemberModal();
+
+            document.getElementById('member-name').value = '';
+            document.getElementById('member-empid').value = '';
+            document.getElementById('member-role').value = '';
+        }
+
+        function removeMember(id) {
+            if (confirm("Are you sure you want to remove this employee from the roster?")) {
+                teamMembers = teamMembers.filter(m => m.id !== id);
+                renderRosterTable();
+                renderAttendanceTable();
+            }
+        }
+
+        // Events Logic
+        function renderEventsGrid() {
+            const grid = document.getElementById('events-grid');
+            grid.innerHTML = '';
+            eventsList.forEach(e => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-2 flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-slate-900 text-base">${e.title}</h3>
+                            <span class="text-xs font-semibold bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md border border-blue-100">${e.date}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">🕒 ${e.time}</p>
+                        <p class="text-sm text-slate-600 mt-3">${e.desc}</p>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex justify-end">
+                        <span class="text-xs text-emerald-600 font-semibold">✓ Active Event</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openEventModal() { document.getElementById('event-modal').classList.remove('hidden'); }
+        function closeEventModal() { document.getElementById('event-modal').classList.add('hidden'); }
+        function openGuideModal() { document.getElementById('guide-modal').classList.remove('hidden'); }
+        function closeGuideModal() { document.getElementById('guide-modal').classList.add('hidden'); }
+
+        function saveNewEvent() {
+            const title = document.getElementById('event-title').value;
+            const date = document.getElementById('event-date').value;
+            const time = document.getElementById('event-time').value;
+            const desc = document.getElementById('event-desc').value;
+
+            if (!title || !date) {
+                alert('Please enter at least an event title and date.');
+                return;
+            }
+
+            eventsList.push({ title, date, time: time || 'All Day', desc: desc || 'No additional details provided.' });
+            renderEventsGrid();
+            closeEventModal();
+
+            document.getElementById('event-title').value = '';
+            document.getElementById('event-date').value = '';
+            document.getElementById('event-time').value = '';
+            document.getElementById('event-desc').value = '';
+        }
+    </script>
+</body>
+</html>
